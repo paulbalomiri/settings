@@ -44,7 +44,7 @@ class SettingPublisher
   settings_cursors_generator: ->
     ret = @opts.collection.find 
       type: 'setting:context'
-      _context:
+      context:
         $in: _.flatten _.map @setting_to_ctx (ctx, setting_name)->
           return ctx.resolved_contexts
     return [ret]
@@ -83,10 +83,10 @@ class settingsCompiler
   
   _update_pub_stack: (id,doc)->
     dirty_settings=[]
-    _.each _.omit(doc, ['_id', '_context']) , (val, setting)=>
+    _.each doc.fields , (val, setting)=>
       if (def = @setting_to_ctx[setting])?
         def.resolved_contexts.forEach (ctx, idx)=>
-          if ctx == doc._context
+          if ctx == doc.context
             unless _.isEqual  @pub_stack[setting][idx],val
               @pub_stack[setting][idx]=val
               dirty_settings.push setting
@@ -148,14 +148,14 @@ Meteor.methods 'set_setting', (key, value, context)->
       collection = Settings.setting_collection_selector(key, context, context_key)
     else
       collection= Settings._collection
-    doc= collection.findOne {_context:context_key}
+    doc= collection.findOne {context:context_key}
     if doc?
       collection.update doc._id,
         $set: _.object [[key,value]]
     else
       collection.insert 
         type:'setting:context'
-        _context: context
+        context: context
         fields: _.object [[key,value]]
 
 
